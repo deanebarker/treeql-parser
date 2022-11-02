@@ -147,32 +147,35 @@ namespace DeaneBarker.TreeQL
             });
 
 
+            // Skip value
+            var skip = Terms.Text("skip").SkipAnd(Terms.Integer());
+
 
             // Limit value
-            var limit = Terms.Text("limit");
-            var number = Terms.Integer();
-
+            var limit = Terms.Text("limit").SkipAnd(Terms.Integer());
 
 
             // Full Command
             parser =
                 select.ElseError("Expected \"select\"")
-                .And(Separated(and, target)).ElseError(TargetValidatorError) // Item 1
+                .SkipAnd(Separated(and, target)).ElseError(TargetValidatorError) // Item 1
                 .AndSkip(ZeroOrOne(where))
                 .And(ZeroOrMany(whereClause)) // Item 2
                 .AndSkip(ZeroOrOne(sortSeparator))
                 .And(ZeroOrOne(Separated(Literals.Char(','), sortValue))) // Item 3
-                .And(ZeroOrOne(limit.SkipAnd(number))) // Item 4
+                .And(ZeroOrOne(skip)) // Item 4
+                .And(ZeroOrOne(limit)) // Item 5
                 .Then(v =>
                 {
                     var query = new TreeQuery()
                     {
-                        Targets = v.Item2,
-                        Sort = v.Item4 ?? new List<Sort>(),
-                        Limit = Convert.ToInt32(v.Item5.ToString())
+                        Targets = v.Item1,
+                        Sort = v.Item3 ?? new List<Sort>(),
+                        Skip = (int)v.Item4,
+                        Limit = (int)v.Item5
                     };
 
-                    foreach (var item in v.Item3)
+                    foreach (var item in v.Item2)
                     {
                         query.Filters.Add(item);
                     }
