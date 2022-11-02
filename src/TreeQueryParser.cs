@@ -74,21 +74,29 @@ namespace DeaneBarker.TreeQL
             {
                 return v ?? "self";
             });
-            var path = Terms.NonWhiteSpace().When(t => TargetValidator(t));
+            var path = Terms.NonWhiteSpace();
             var target = 
                 scope // Item1
                 .AndSkip(of)
                 .And(path) // Item2
                 .And(ZeroOrOne(OneOf(inclusive, exclusive))) // Item3
                 .Then(v =>
-            {
-                return new Target()
                 {
-                    Scope = v.Item1,
-                    Path = v.Item2.ToString(),
-                    Inclusive = v.Item3 == "inclusive"
-                };
-            });
+                    // Make sure this is a valid path
+                    // We have to do it this way because we want the validation of paths to be dynamic
+                    // So, everything PARSES, but then we VALIDATE
+                    if (!TargetValidator(v.Item2.ToString()))
+                    {
+                        throw new ParseException(TargetValidatorError, new TextPosition(v.Item2.Offset, 0, 0));
+                    }
+
+                    return new Target()
+                    {
+                        Scope = v.Item1,
+                        Path = v.Item2.ToString(),
+                        Inclusive = v.Item3 == "inclusive"
+                    };
+                });
 
 
 
