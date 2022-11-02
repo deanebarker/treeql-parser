@@ -2,24 +2,36 @@
 
 This library is a parser to convert text into a structured object which represents a query for a tree-based datasource (or any data source, really -- how you apply it is up to you).
 
-To be clear: this does not do the searching, it just creates a structure object for the query, which you can then use for your search.
+To be clear: this does not do the searching. How could it -- I don't anything about your repository. This library just converts text into an object, from which you can configure and execute a search.
 
-This library is built on Parlot, which is a parsing library written by Sebastian Ros.
+This library is built on Parlot, which is a parsing library written by Sebastian Ros. Parlot is the parser used in the Fluid templating language.
+
+>Note: it's sometimes diffucult to describe this library because we necessarily have to discuss what it's _supposed to do_ when used to power a search experience. Remember, the code here is simply to parse text into a query object, which you will then use to query your repository. So, forgive some (assumed) specifics on execution below.
 
 ## Basic Syntax
 
-It's pretty SQL-ish:
+At its most basic:
+
+```
+TARGETS (one or many)
+FILTERS (zero or many)
+SORTS (zero or many)
+SKIP (zero or one)
+LIMIT (zero or one)
+```
+
+The details are very much like SQL:
 
 ```
 SELECT
-  [TARGET: [SCOPE] of [PATH] [INCLUSIVE/EXCLUSIVE]]
-  WHERE [FILTER: [FIELDNAME] [OPERATOR] [VALUE]]
-  ORDER BY [FIELD] [ASC/DESC]
+  [TARGET: [SCOPE] of [PATH] [INCLUSIVE/EXCLUSIVE]] AND [additional targets...]
+  WHERE [FILTER: [FIELDNAME] [OPERATOR] [VALUE]] [AND/OR] [additional filters...]
+  ORDER BY [FIELD] [ASC/DESC], [additional sorts]
   [SKIP #]
   [LIMIT #]
 ```
 
-Text entered into this format will be turned in to a `TreeQLQUery` object, which looks like this:
+Text entered into this format will be turned in to a `TreeQuery` object (included in thi library), which looks like this:
 
 ```
 TreeQLQuery
@@ -41,6 +53,15 @@ Limit: int
 
 Again, _what you do with this is up to you_. All this does is organize the information for you to use it to query whatever datasource you have.
 
+## C# Usage
+
+It's quite simple:
+
+```
+var query = TreeQueryParser.Parse(queryString);
+```
+
+
 ## Example Query
 
 ```
@@ -53,26 +74,30 @@ SELECT children OF /some/path AND ancestors OF /some/other/path INCLUSIVE
 
 With an expected implementation, this will --
 
-* It will retrieve the "children" of "/some/path/" (whatever that means to your implementation) and the "ancestors" of "/some/other/path/" and "/some/other/path/" _itself_ (that's the "inclusive" part). It will combine these in a big pool of content
-* It will then filter this pool of content to find objects where `field` equals value _and_ "other_field" does not equal "other_value"
+* It will retrieve the "children" of `/some/path/` (whatever that means to your search implementation) and the "ancestors" of `/some/other/path/` and `/some/other/path/` _itself_ (that's the `INCLUSIVE` token). It will then combine these into a pool of content
+* It will then filter this pool of content to find objects where `field` equals `value` _and_ `other_field` does not equal `other_value`
 * It will then sort the results by `field1` in ascending order (the default). For items that have the same value for `field1`, they will be sorted by `field2` in descending order
-* It will then skis the first five items
-* It will retrieve the next 10 (so, items 6-15)
+* It will then skip the first five items
+* It will retrieve up to the next 10 (so, items 6-15, assuming there's at least 15)
 
-Again, this is what it's _intended_ to do. What you do with your implementation is up to you.
+>Again, this is what it's _intended_ to do. What you do with your implementation is up to you.
 
 ## Targets
 
-Targets tell the query where to start -- what is the pool of content objects to accumulate then filter?
+At least one Target is required. 
 
-Targets are "geographical," meaning they query based on a location in a tree of content. Where they start is a combination of scope and path, and this is called a Target.
+Target are intiated by the token `SELECT`.
 
-* **The Scope:** For a tree-based system, this would usually be `self`, `children`, `descendants`, `parent`, or `ancestors`. These descriptors are meant to be used in relation to the path.
-* **The Path:** This is the location on the tree that the scope refers to.
+Targets tell the query where to start -- what is the pool of content objects to gather, then optionally filter, sort, and subdivide?
 
-Scope and path are always separated by the constant `OF`.
+Targets are "geographical," meaning they query based on a location in a tree of content. Where they start is a combination of scope and path.
 
-The result should be intuitive:
+* **Scope:** For a tree-based system, this would usually be `self`, `children`, `descendants`, `parent`, or `ancestors`. These descriptors are meant to be used in relation to the path.
+* **Path:** This is the location on the tree that the scope refers to.
+
+Scope and path are always separated by the token `OF`.
+
+Some examples:
 
 ```
 children OF /some/path/
@@ -80,14 +105,162 @@ ancestors OF /some/other/path/
 self OF /
 ```
 
-The default is for the target to be exclusive, meaning `children OF /some/path/` does not include _/some/path/ itself_. If you want the Target to be inclusive, meaning you want both the children and the path itself, you can append `INCLUSIVE` to the end of the target.
+The path does not need to be quoted.
+
+>TODO: add about the customization of paths
+
+The default is for the target to be exclusive, meaning `children OF /some/path/` does not include _/some/path/ itself_. If you want the Target to be inclusive, meaning you want both the children *and* the path itself, you can append `INCLUSIVE` to the end of the Target.
 
 ```
 children OF /some/path/ INCLUSIVE
 ```
 
+You can also append `EXCLUSIVE`, but this is assumed.
+
 Target can be chained with `AND`. In these cases, all the Targets are retrieved individually and combined, then de-duped.
 
 ```
-SELECT children of /some/path/ AND siblings of /some/other/path` INCLUSIVE
+SELECT children OF /some/path/ AND siblings OF /some/other/path` INCLUSIVE
 ```
+
+## Filters
+
+Filters are optional. There can be an unlimited number of Filters.
+
+Filters are initiated by by the token `WHERE`.
+
+Filters are in the common format of:
+
+```
+[FIELD] [OPERATOR] [VALUE]
+```
+
+All will be parsed as strings.
+
+The default operators detected are:
+
+* `=`
+* `!=`
+* `>`
+* `>=`
+* `<`
+* `<=`
+
+Filters can be chained with boolean `AND` or `OR` operators.
+
+Parentheticals are not currently supported.
+
+>Necesarily, this means that mixing `AND` and `OR` booleans doesn't make much sense. Logically, they all have to be one or the other, because without parentheticals, mixing them doesn't...work.
+
+_All_ values have to be quoted with either single or double quotes. This differs from SQL where unquoted numbers are allowed.
+
+Some examples:
+
+```
+WHERE name = "Deane"
+WHERE age > "50"
+WHERE name = "Annie" OR name = "Deane" OR name = "Alec"
+```
+
+## Sorts
+
+Sorts are optional. There can be an unlimited number of Sorts.
+
+Sorts are initiated by the token sequence `ORDER BY`.
+
+A Sort specification can be a simple field name. The assumed direction is ascending, but this can be made explicit by appending `ASC`.
+
+Descending can be specified by appending `DESC`.
+
+Multiple sorts are separated by a comma.
+
+Examples:
+
+```
+ORDER BY name
+ORDER BY age DESC
+ORDER BY age ASC, name DESC
+
+## Skip
+
+Skip is optional.
+
+A Skip specification is initiated by the token `SKIP`.
+
+There can only be a single Skip specification.
+
+Following the token `SKIP` should be a simple integer, not quoted, no commas or decimals.
+
+## Limit
+
+Limit is optional.
+
+A Limit specification is initiated by the token `LIMIT`.
+
+There can only be a single Limit specification.
+
+Following the token `LIMIT` should be a simple integer, not quoted, no commas or decimals.
+
+## Whitespace and Indentation
+
+Whitespace is ignored by the parser.
+
+This works fine:
+
+```
+SELECT       children      OF       /
+```
+
+Indentation is also ignored. Any indentation in the examples in this document is solely for clarity.
+
+## Multiline Queries
+
+Queries can be single line or multiline. Before parsing, all newlines are replaced by spaces, effectively "gluing" the lines together.
+
+This:
+
+```
+SELECT children OF / WHERE name = "Deane"
+```
+
+Is the same as:
+
+```
+SELECT
+  children OF /
+  WHERE name = "Deane"
+  ```
+
+## Comments
+
+You can provide comments for entire lines. Before the lines are combined, any line that begins `#` (regardless of indentation) will be removed.
+
+This query:
+
+```
+# This is my query
+SELECT
+  children of /
+  WHERE name = "Deane"
+  # AND age = "50"
+  AND sex = "male"
+ ```
+
+ Will be parsed as:
+
+ ```
+ SELECT
+   children of /
+   WHERE name = "Deane"
+   AND sex = "male"
+ ```
+
+Remember: comments only work on entire lines. You cannot put `#` in the middle of a line.
+
+## Casing
+
+The parser is completely case-insensitive. In fact, the entire query will be lower-cased before parsing.
+
+Any casing in the examples in this document is solely for clarity.
+
+>Note: this might change in the future. By lower-casing everything, your search execution is necessaily also case-insenstive. This is a limitation that might be addressed at some point.
