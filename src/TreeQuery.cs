@@ -12,7 +12,7 @@ namespace DeaneBarker.TreeQL
         public List<Filter> Filters { get; set; } = new List<Filter>();
 
         // Just for debugguing
-        public string Source { get; set; }
+        public string OriginalQueryText { get; set; }
     }
 
     public class Filter

@@ -6,29 +6,17 @@ namespace DeaneBarker.TreeQL
 {
     public static class TreeQueryParser
     {
-
         public static Func<TextSpan, bool> TargetValidator { get; set; } = (t) => { return true; }; // Validate anything by default
         public static string TargetValidatorError { get; set; } = string.Empty;
         public static string[] AllowedOperators { get; set; } = new[] { "=", "!=", ">", ">=", "<", "<=" };
         public static string[] AllowedScopes { get; set; } = new[] { "results", "self", "children", "parent", "ancestors", "descendants", "siblings" };
-
-        private static string commentPrefix = "#";
-
+        public static string CommentPrefix { get; set; } = "#";
 
 
+        // This is populated once in the static construtor
         private static Parser<TreeQuery> parser;
 
-        public static TreeQuery Parse(string q, object data)
-        {
-            foreach (var property in data.GetType().GetProperties())
-            {
-                var value = property.GetValue(data, null);
-                q = q.Replace(string.Concat("@", property.Name), value.ToString());
-            }
-
-            return Parse(q);
-        }
-
+        // This is the only available method on the type
         public static TreeQuery Parse(string q)
         {
             if(string.IsNullOrWhiteSpace(q))
@@ -38,7 +26,7 @@ namespace DeaneBarker.TreeQL
 
             q = Clean(q);
             var query = parser.Parse(q);
-            query.Source = q;
+            query.OriginalQueryText = q;
             return query;
         }
 
@@ -47,7 +35,7 @@ namespace DeaneBarker.TreeQL
             var lines = input.Split(new string[] { "\n", "\r\n", Environment.NewLine }, StringSplitOptions.None).AsQueryable();
 
             lines = lines
-                .Where(l => !l.Trim().StartsWith(commentPrefix))
+                .Where(l => !l.Trim().StartsWith(CommentPrefix))
                 .Select(s => s.Trim());
 
             return string.Join(" ", lines).ToLower().Trim(); 
@@ -176,15 +164,11 @@ namespace DeaneBarker.TreeQL
                     var query = new TreeQuery()
                     {
                         Sources = v.Item1,
+                        Filters = v.Item2 ?? new List<Filter>(),
                         Sort = v.Item3 ?? new List<Sort>(),
                         Skip = (int)v.Item4,
                         Limit = (int)v.Item5
                     };
-
-                    foreach (var item in v.Item2)
-                    {
-                        query.Filters.Add(item);
-                    }
 
                     return query;
 
