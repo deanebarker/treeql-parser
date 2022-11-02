@@ -8,7 +8,7 @@ namespace DeaneBarker.TreeQL
     {
 
         public static Func<TextSpan, bool> TargetValidator { get; set; } = (t) => { return true; }; // Validate anything by default
-        public static string TargetValidatorError { get; set; } = String.Empty;
+        public static string TargetValidatorError { get; set; } = string.Empty;
         public static string[] AllowedOperators { get; set; } = new[] { "=", "!=", ">", ">=", "<", "<=" };
         public static string[] AllowedScopes { get; set; } = new[] { "results", "self", "children", "parent", "ancestors", "descendants", "siblings" };
 
@@ -65,7 +65,7 @@ namespace DeaneBarker.TreeQL
             var inclusive = Terms.Text("inclusive");
             var exclusive = Terms.Text("exclusive");
 
-            var target =
+            var source =
                 Terms.NonWhiteSpace() // Item1
                 .AndSkip(of)
                 .And(Terms.NonWhiteSpace()) // Item2
@@ -88,10 +88,10 @@ namespace DeaneBarker.TreeQL
                         throw new ParseException(TargetValidatorError, new TextPosition(v.Item2.Offset, 0, 0));
                     }
 
-                    return new Target()
+                    return new Source()
                     {
                         Scope = v.Item1.ToString(),
-                        Path = v.Item2.ToString(),
+                        Target = v.Item2.ToString(),
                         Inclusive = v.Item3 == "inclusive"
                     };
                 });
@@ -164,7 +164,7 @@ namespace DeaneBarker.TreeQL
             // Full Command
             parser =
                 select.ElseError("Expected \"select\"")
-                .SkipAnd(Separated(and, target)).ElseError(TargetValidatorError) // Item 1
+                .SkipAnd(Separated(and, source)).ElseError(TargetValidatorError) // Item 1
                 .AndSkip(ZeroOrOne(where))
                 .And(ZeroOrMany(whereClause)) // Item 2
                 .AndSkip(ZeroOrOne(sortSeparator))
@@ -175,7 +175,7 @@ namespace DeaneBarker.TreeQL
                 {
                     var query = new TreeQuery()
                     {
-                        Targets = v.Item1,
+                        Sources = v.Item1,
                         Sort = v.Item3 ?? new List<Sort>(),
                         Skip = (int)v.Item4,
                         Limit = (int)v.Item5

@@ -4,7 +4,7 @@ namespace DeaneBarker.TreeQL
 {
     public class TreeQuery
     {
-        public List<Target> Targets { get; set; } = new List<Target>();
+        public List<Source> Sources { get; set; } = new List<Source>();
         public List<Sort> Sort { get; set; } = new List<Sort>();
         public long Limit { get; set; }
         public int Skip { get; set; }
@@ -24,10 +24,10 @@ namespace DeaneBarker.TreeQL
         public string Conjunction { get; set; }
     }
 
-    public class Target
+    public class Source
     {
         public string Scope { get; set; }
-        public string Path { get; set; }
+        public string Target { get; set; }
         public bool Inclusive { get; set; } // Whether or not the include the target
     }
 

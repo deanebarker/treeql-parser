@@ -13,7 +13,7 @@ This library is built on Parlot, which is a parsing library written by Sebastian
 At its most basic:
 
 ```
-TARGETS (one or many)
+SOURCES (one or many)
 FILTERS (zero or many)
 SORTS (zero or many)
 SKIP (zero or one)
@@ -24,7 +24,7 @@ The details are very much like SQL:
 
 ```
 SELECT
-  [TARGET: [SCOPE] of [PATH] [INCLUSIVE/EXCLUSIVE]] AND [additional targets...]
+  [SOURCE: [SCOPE] of [TARGET] [INCLUSIVE/EXCLUSIVE]] AND [additional sources...]
   WHERE [FILTER: [FIELDNAME] [OPERATOR] [VALUE]] [AND/OR] [additional filters...]
   ORDER BY [FIELD] [ASC/DESC], [additional sorts]
   [SKIP #]
@@ -36,13 +36,13 @@ Text entered into this format will be turned in to a `TreeQuery` object (include
 ```
 TreeQLQuery
 ---
-Targets: List<Target>
-  Scope: string
-  Path: string (validated)
+Sources: List<Source>
+  Scope: string (validated set)
+  Target: string (validated format)
   Inclusive/Exclusive
 Filters: List<Filter>
   FieldName: string
-  Operator: string
+  Operator: string (validated set)
   Value: string
   Type: string
 Sorts: List<Sort>
@@ -83,20 +83,20 @@ With an expected implementation, this will --
 
 >Again, this is what it's _intended_ to do. What you do with your implementation is up to you.
 
-## Targets
+## Sources
 
-At least one Target is required. 
+At least one Source is required. 
 
-Target are intiated by the token `SELECT`.
+Sources are intiated by the token `SELECT`.
 
-Targets tell the query where to start -- what is the pool of content objects to gather, then optionally filter, sort, and subdivide?
+Sources tell the query where to start -- what is the pool of content objects to gather, then optionally filter, sort, and subdivide?
 
-Targets are "geographical," meaning they query based on a location in a tree of content. Where they start is a combination of scope and path.
+Sources are "geographical," meaning they query based on a location in a tree of content. Where they start is a combination of scope and path.
 
 * **Scope:** For a tree-based system, this would usually be `self`, `children`, `descendants`, `parent`, or `ancestors`. These descriptors are meant to be used in relation to the path.
-* **Path:** This is the location on the tree that the scope refers to.
+* **Target:** This is the location on the tree that the scope refers to.
 
-Scope and path are always separated by the token `OF`.
+Scope and Target are always separated by the token `OF`.
 
 Some examples:
 
@@ -118,9 +118,9 @@ The scopes allowed are defined in a public static collection: `AllowedScopes`. T
 
 Any parsed scope _not_ in this collection will throw an error.
 
-The path does not need to be quoted.
+The Target does not need to be quoted.
 
-The path is validated by a public static `Func<string,bool>` called `TargetValidator`. If this returns false a parse error will be thrown with the text from `TargetValidatorError`. By default, `TargetValidator` always returns `true` (any path will validate)
+The Target is validated by a public static `Func<string,bool>` called `TargetValidator`. If this returns false a parse error will be thrown with the text from `TargetValidatorError`. By default, `TargetValidator` always returns `true` (any Target will validate)
 
 For example, this `TargetValidator` will check for some specific formats:
 
@@ -146,9 +146,7 @@ If it returns false, a descriptive error message can be specified:
 TreeQueryParser.TargetValidatorError = "Target must (1) begin and end with a forward slash, (2) be an integer, or (3) start with \"@\"";
 ```
 
->TODO: The naming is off here. "path" should be "target" and the combination of scope/target should be...a "set"? A "collection"? Not sure.
-
-The default is for the target to be exclusive, meaning `children OF /some/path/` does not include _/some/path/ itself_. If you want the Target to be inclusive, meaning you want both the children *and* the path itself, you can append `INCLUSIVE` to the end of the Target.
+The default is for the Source to be exclusive, meaning `children OF /some/path/` does not include _/some/path/ itself_. If you want the Source to be inclusive, meaning you want both the children *and* the path itself, you can append `INCLUSIVE` to the end of the Source.
 
 ```
 children OF /some/path/ INCLUSIVE
@@ -156,7 +154,7 @@ children OF /some/path/ INCLUSIVE
 
 You can also append `EXCLUSIVE`, but this is assumed.
 
-Target can be chained with `AND`. In these cases, all the Targets are retrieved individually and combined, then de-duped.
+Sources can be chained with `AND`. In these cases, all the Sources are retrieved individually and combined, then de-duped.
 
 ```
 SELECT children OF /some/path/ AND siblings OF /some/other/path` INCLUSIVE
