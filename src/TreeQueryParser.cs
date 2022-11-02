@@ -96,19 +96,21 @@ namespace DeaneBarker.TreeQL
             var conjunction = OneOf(and, or);
             var where = Terms.Text("where");
             var fieldName = Terms.NonWhiteSpace();
-            var contains = Terms.Text("contains");
-            var lessThan = Terms.Text("<");
-            var equals = Terms.Text("=");
-            var greaterThan = Terms.Text(">");
-            var notEqualTo = Terms.Text("!=");
             var value = Terms.String(StringLiteralQuotes.SingleOrDouble);
             var whereClause = ZeroOrOne(conjunction) // Item1
                 .And(fieldName) // Item2
-                //.And(Terms.NonWhiteSpace().When(t => AllowedOperators.Contains(t.ToString().Trim())).ElseError($"Allowed operators: {string.Join(", ", AllowedOperators)}")) // Item3
-                .And(OneOf(contains, lessThan, equals, greaterThan, notEqualTo))
+                .And(Terms.NonWhiteSpace()) // Item3
                 .And(value) // Item4
                 .Then(v =>
                 {
+                    // Make sure this is a valid operator
+                    // We have to do it this way because we want the list of operators to be dynamic
+                    // So, everything PARSES, but then we VALIDATE
+                    if (!AllowedOperators.Contains(v.Item3.ToString().ToLower().Trim()))
+                    {
+                        throw new ParseException($"Operation \"{v.Item3}\" not allowed. Allowed operators: {string.Join(", ", AllowedOperators)}", new TextPosition(v.Item3.Offset, 0, 0));
+                    }
+
                     var fieldName = v.Item2.ToString().Split(':').First();
                     var type = v.Item2.ToString().Contains(":") ? v.Item2.ToString().Split(':').Last() : "string";
 

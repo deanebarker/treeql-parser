@@ -31,7 +31,7 @@ SELECT
   [LIMIT #]
 ```
 
-Text entered into this format will be turned in to a `TreeQuery` object (included in thi library), which looks like this:
+Text entered into this format will be turned in to a `TreeQuery` object (included in this library), which looks like this:
 
 ```
 TreeQLQuery
@@ -44,6 +44,7 @@ Filters: List<Filter>
   FieldName: string
   Operator: string
   Value: string
+  Type: string
 Sorts: List<Sort>
   FieldName: string
   Direction: SortDirection
@@ -137,7 +138,9 @@ Filters are in the common format of:
 
 All will be parsed as strings.
 
-The default operators detected are:
+If the field name contains a colon, it will be split on this. The value before the colon will become the `FieldName`, and the value after the colon will become the `Type`. This is for weakly typed repositories where the datatype needs to be specified for comparisons. If the field does not contain a colon, `Type` will default to "string" and can usually be ignored.
+
+The operators allowed are defined in a public static collection: `AllowedOperators`. The defaults are;
 
 * `=`
 * `!=`
@@ -145,6 +148,8 @@ The default operators detected are:
 * `>=`
 * `<`
 * `<=`
+
+Any parsed operator _not_ in this collection will throw an error.
 
 Filters can be chained with boolean `AND` or `OR` operators.
 
