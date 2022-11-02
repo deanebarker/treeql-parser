@@ -106,9 +106,47 @@ ancestors OF /some/other/path/
 self OF /
 ```
 
+The scopes allowed are defined in a public static collection: `AllowedScopes`. The defaults are;
+
+* "results"
+* "self"
+* "children"
+* "parent"
+* "ancestors"
+* "descendants"
+* "siblings
+
+Any parsed scope _not_ in this collection will throw an error.
+
 The path does not need to be quoted.
 
->TODO: add about the customization of paths
+The path is validated by a public static `Func<string,bool>` called `TargetValidator`. If this returns false a parse error will be thrown with the text from `TargetValidatorError`. By default, `TargetValidator` always returns `true` (any path will validate)
+
+For example, this `TargetValidator` will check for some specific formats:
+
+```
+TreeQueryParser.TargetValidator = (t) =>
+{
+    if (t.ToString().StartsWith("/") && t.ToString().EndsWith("/"))
+        return true;
+
+    if (t.ToString().StartsWith("@"))
+        return true;
+
+    if (t.ToString().All(c => Char.IsDigit(c)))
+        return true;
+
+    return false;
+};
+```
+
+If it returns false, a descriptive error message can be specified:
+
+```
+TreeQueryParser.TargetValidatorError = "Target must (1) begin and end with a forward slash, (2) be an integer, or (3) start with \"@\"";
+```
+
+>TODO: The naming is off here. "path" should be "target" and the combination of scope/target should be...a "set"? A "collection"? Not sure.
 
 The default is for the target to be exclusive, meaning `children OF /some/path/` does not include _/some/path/ itself_. If you want the Target to be inclusive, meaning you want both the children *and* the path itself, you can append `INCLUSIVE` to the end of the Target.
 

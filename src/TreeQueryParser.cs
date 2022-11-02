@@ -7,12 +7,14 @@ namespace DeaneBarker.TreeQL
     public static class TreeQueryParser
     {
 
-        public static Func<TextSpan, bool> TargetValidator = (t) => { return true; }; // Validate anything by default
-        public static string TargetValidatorError = "Target must (1) begin and end with a forward slash, (2) be an integer, or (3) start with \"@\"";
-
-        public static string[] AllowedOperators = new[] { "=", "!=", ">", ">=", "<", "<=" };
+        public static Func<TextSpan, bool> TargetValidator { get; set; } = (t) => { return true; }; // Validate anything by default
+        public static string TargetValidatorError { get; set; } = String.Empty;
+        public static string[] AllowedOperators { get; set; } = new[] { "=", "!=", ">", ">=", "<", "<=" };
+        public static string[] AllowedScopes { get; set; } = new[] { "results", "self", "children", "parent", "ancestors", "descendants", "siblings" };
 
         private static string commentPrefix = "#";
+
+
 
         private static Parser<TreeQuery> parser;
 
@@ -60,28 +62,24 @@ namespace DeaneBarker.TreeQL
 
 
             // Target
-            var children = Terms.Text("children");
-            var results = Terms.Text("results");
-            var parent = Terms.Text("parent");
-            var descendants = Terms.Text("descendants");
-            var ancestors = Terms.Text("ancestors");
-            var self = Terms.Text("self");
-            var siblings = Terms.Text("siblings");
             var inclusive = Terms.Text("inclusive");
             var exclusive = Terms.Text("exclusive");
 
-            var scope = ZeroOrOne(OneOf(results, parent, children, descendants, self, ancestors, siblings).ElseError("Expected scope")).Then(v =>
-            {
-                return v ?? "self";
-            });
-            var path = Terms.NonWhiteSpace();
-            var target = 
-                scope // Item1
+            var target =
+                Terms.NonWhiteSpace() // Item1
                 .AndSkip(of)
-                .And(path) // Item2
+                .And(Terms.NonWhiteSpace()) // Item2
                 .And(ZeroOrOne(OneOf(inclusive, exclusive))) // Item3
                 .Then(v =>
                 {
+                    // Make sure this is a valid scope
+                    // We have to do it this way because we want the list of scopes to be dynamic
+                    // So, everything PARSES, but then we VALIDATE
+                    if (!AllowedScopes.Contains(v.Item1.ToString().ToLower().Trim()))
+                    {
+                        throw new ParseException($"Scope \"{v.Item1}\" not allowed. Allowed scopes: {string.Join(", ", AllowedScopes)}", new TextPosition(v.Item1.Offset, 0, 0));
+                    }
+
                     // Make sure this is a valid path
                     // We have to do it this way because we want the validation of paths to be dynamic
                     // So, everything PARSES, but then we VALIDATE
@@ -92,7 +90,7 @@ namespace DeaneBarker.TreeQL
 
                     return new Target()
                     {
-                        Scope = v.Item1,
+                        Scope = v.Item1.ToString(),
                         Path = v.Item2.ToString(),
                         Inclusive = v.Item3 == "inclusive"
                     };
