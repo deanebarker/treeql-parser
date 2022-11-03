@@ -1,5 +1,8 @@
 ﻿using Parlot;
 using Parlot.Fluent;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using static Parlot.Fluent.Parsers;
 
 namespace DeaneBarker.TreeQL
@@ -47,6 +50,7 @@ namespace DeaneBarker.TreeQL
             var and = Terms.Text("and");
             var or = Terms.Text("or");
             var select = Terms.Text("select");
+            var comma = Literals.Char(',');
 
 
             // Target
@@ -120,14 +124,8 @@ namespace DeaneBarker.TreeQL
 
 
 
-            // Sort Separator
-            var order = Terms.Text("order");
-            var by = Terms.Text("by");
-            var sortSeparator = order.And(by);
-
-
-
             // Sort Value
+            var orderBy = Terms.Text("order by");
             var ascending = Terms.Text("asc");
             var descending = Terms.Text("desc");
             var sortDirection = OneOf(ascending, descending);
@@ -152,11 +150,9 @@ namespace DeaneBarker.TreeQL
             // Full Command
             parser =
                 select.ElseError("Expected \"select\"")
-                .SkipAnd(Separated(and, source)).ElseError(TargetValidatorError) // Item 1
-                .AndSkip(ZeroOrOne(where))
-                .And(ZeroOrMany(whereClause)) // Item 2
-                .AndSkip(ZeroOrOne(sortSeparator))
-                .And(ZeroOrOne(Separated(Literals.Char(','), sortValue))) // Item 3
+                .SkipAnd(Separated(and, source)) // Item 1
+                .And(ZeroOrOne(where.SkipAnd(OneOrMany(whereClause)))) // Item 2
+                .And(ZeroOrOne(orderBy.SkipAnd(Separated(comma, sortValue)))) // Item 3
                 .And(ZeroOrOne(skip)) // Item 4
                 .And(ZeroOrOne(limit)) // Item 5
                 .Then(v =>
