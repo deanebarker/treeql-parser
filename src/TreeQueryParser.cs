@@ -11,8 +11,8 @@ namespace DeaneBarker.TreeQL
     {
         public static Func<TextSpan, bool> TargetValidator { get; set; } = (t) => { return true; }; // Validate anything by default
         public static string TargetValidatorError { get; set; } = string.Empty;
-        public static string[] AllowedOperators { get; set; } = new[] { "=", "!=", ">", ">=", "<", "<=" };
-        public static string[] AllowedScopes { get; set; } = new[] { "results", "self", "children", "parent", "ancestors", "descendants", "siblings" };
+        public static List<string> AllowedOperators { get; set; } = new List<string>() { "=", "!=", ">", ">=", "<", "<=" };
+        public static List<string> AllowedScopes { get; set; } = new List<string>() { "results", "self", "children", "parent", "ancestors", "descendants", "siblings" };
         public static string CommentPrefix { get; set; } = "#";
 
 
