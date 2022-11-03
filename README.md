@@ -4,9 +4,15 @@ This library is a parser to convert text into a structured object which represen
 
 To be clear: this does not do the searching. How could it -- I don't anything about your repository. This library just converts text into an object, from which you can configure and execute a search.
 
-This library is built on Parlot, which is a parsing library written by Sebastian Ros. Parlot is the parser used in the Fluid templating language.
+This library is built on [Parlot](https://www.nuget.org/packages/Parlot/), which is a parsing library written by Sebastian Ros. Parlot is the parser used in the Fluid templating language.
 
 >Note: it's sometimes diffucult to describe this library because we necessarily have to discuss what it's _supposed to do_ when used to power a search experience. Remember, the code here is simply to parse text into a query object, which you will then use to query your repository. So, forgive some (assumed) specifics on execution below.
+
+## To Use
+
+Everything is contained in a single file: `TreeQueryParser.cs`. Just compile that into your project.
+
+You will need to add a reference to a single Nuget project: [Parlot](https://www.nuget.org/packages/Parlot/) (note: if you're using Fluid, you already have this)
 
 ## Basic Syntax
 
@@ -62,6 +68,7 @@ It's quite simple:
 var query = TreeQueryParser.Parse(queryString);
 ```
 
+`query` will now be a populated `TreeQuery` object.
 
 ## Example Query
 
