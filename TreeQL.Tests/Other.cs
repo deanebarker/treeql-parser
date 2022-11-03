@@ -85,6 +85,36 @@ namespace TreeQL.Tests
             Assert.AreEqual(100, q.Limit);
         }
 
+        [TestMethod]
+        public void LimitBeforeSkip()
+        {
+            var q = TreeQueryParser.Parse("SELECT children OF target LIMIT 100 SKIP 200");
+
+            Assert.AreEqual(0, q.Skip); // This should fail to parse, because you can't have a skip after a limit
+            Assert.AreEqual(100, q.Limit);
+        }
+
+        [TestMethod]
+        public void WeirdSpacing()
+        {
+            var q = TreeQueryParser.Parse("SELECT             children               OF target");
+
+            Assert.AreEqual("children", q.Sources.First().Scope);
+        }
+
+
+        [TestMethod]
+        public void WeirdCasing()
+        {
+            var q = TreeQueryParser.Parse("Select CHILDREN of TaRgEt");
+
+            Assert.AreEqual("children", q.Sources.First().Scope);
+        }
+
+
+
+
+
         public class Strings : List<string>
         {
             public override string ToString()
