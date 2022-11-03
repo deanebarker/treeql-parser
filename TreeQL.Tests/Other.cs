@@ -112,15 +112,13 @@ namespace TreeQL.Tests
         }
 
 
-
-
-
         public class Strings : List<string>
         {
             public override string ToString()
             {
                 return string.Join(" ", this.ToArray());
             }
+
 
             public static implicit operator string(Strings s) { return s.ToString(); }
         }
