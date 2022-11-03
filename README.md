@@ -14,6 +14,16 @@ Everything is contained in a single file: `TreeQueryParser.cs`. Just compile tha
 
 You will need to add a reference to a single Nuget project: [Parlot](https://www.nuget.org/packages/Parlot/) (note: if you're using Fluid, you already have this)
 
+## C# Usage
+
+It's quite simple:
+
+```
+var query = TreeQueryParser.Parse(queryString);
+```
+
+`query` will now be a populated `TreeQuery` object.
+
 ## Basic Syntax
 
 At its most basic:
@@ -60,15 +70,6 @@ Limit: int
 
 Again, _what you do with this is up to you_. All this does is organize the information for you to use it to query whatever datasource you have.
 
-## C# Usage
-
-It's quite simple:
-
-```
-var query = TreeQueryParser.Parse(queryString);
-```
-
-`query` will now be a populated `TreeQuery` object.
 
 ## Example Query
 
