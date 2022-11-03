@@ -29,6 +29,10 @@ namespace TreeQL.Tests
         // This test reveals the problem in setting options as static properties...
         // I need to use the correct pattern with options...
 
+        // Update: I took a run at it; the problem is that these options are needed in the 
+        // parser definition, and that's created in the static constructor. So I can't pass
+        // in custom options, because there's only ONE parser
+
         //[TestMethod]
         //public void FailsCustomTargetValidator()
         //{
